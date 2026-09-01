@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "trips.db"
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
-model = ChatOpenAI(model="gpt-4o-mini",api_key="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")
+model = ChatOpenAI(model="gpt-4o-mini",api_key="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")
 
 
 # ===========================================================================
