@@ -1,8 +1,9 @@
 fastapi
+uvicorn[standard]
 python-multipart
 langgraph
 langchain-core
 langchain-openai
 pydantic
 typing-extensions
-uvicorn[standard]
+python-dotenv
