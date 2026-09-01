@@ -1,0 +1,7 @@
+fastapi
+python-multipart
+langgraph
+langchain-core
+langchain-openai
+pydantic
+typing-extensions

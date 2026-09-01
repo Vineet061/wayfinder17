@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wayfind — find the place, plan the trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F3F0;
+  --surface:#FFFFFF;
+  --surface-2:#F7F8F5;
+  --ink:#161D1A;
+  --ink-2:#586159;
+  --ink-3:#8A928A;
+  --line:#DDE2DC;
+  --line-2:#C6CDC5;
+  --moss:#2C5545;
+  --moss-dark:#1F3F33;
+  --moss-wash:#2C554512;
+  --amber:#A8620C;
+  --amber-wash:#A8620C14;
+  --red:#A63428;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Public Sans',system-ui,sans-serif;font-size:14.5px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--moss);outline-offset:2px;border-radius:4px}
+
+.top{
+  background:var(--surface);border-bottom:1px solid var(--line);
+  padding:0 26px;height:58px;display:flex;align-items:center;gap:11px;
+  position:sticky;top:0;z-index:20;
+}
+.mark{width:24px;height:24px;border-radius:50%;border:2px solid var(--moss);position:relative}
+.mark::after{content:"";position:absolute;inset:5px 5px auto auto;width:6px;height:6px;border-radius:50%;background:var(--moss);top:4px;right:4px}
+.top h1{font-family:'Fraunces';font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
+.top .tag{color:var(--ink-3);font-size:12.5px;margin-left:2px}
+.top .hist{margin-left:auto;background:none;border:1px solid var(--line-2);color:var(--ink-2);padding:5px 12px;border-radius:99px;font-size:12.5px}
+.top .hist:hover{border-color:var(--moss);color:var(--moss)}
+
+.mode{display:none;padding:8px 26px;background:var(--amber-wash);border-bottom:1px solid #A8620C33;color:var(--amber);font-size:12.5px}
+.mode.show{display:block}
+
+.layout{display:flex;gap:0;align-items:flex-start}
+.side{
+  width:330px;flex:0 0 330px;padding:24px 22px;position:sticky;top:58px;
+  max-height:calc(100vh - 58px);overflow-y:auto;
+}
+.main{flex:1;min-width:0;padding:24px 30px 80px 8px}
+
+/* ---------- upload ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel > h2{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 12px}
+
+.drop{
+  border:1.5px dashed var(--line-2);border-radius:10px;background:var(--surface-2);
+  padding:26px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.drop:hover,.drop.over{border-color:var(--moss);background:var(--moss-wash)}
+.drop .ico{font-size:22px;line-height:1}
+.drop .t{font-weight:500;margin-top:7px;font-size:13.5px}
+.drop .s{color:var(--ink-3);font-size:12px;margin-top:2px}
+.drop.has{padding:0;border-style:solid;overflow:hidden;background:none}
+.drop img{width:100%;display:block;max-height:210px;object-fit:cover}
+.file-row{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--ink-3)}
+.file-row button{background:none;border:0;color:var(--moss);padding:0;font-size:12.5px;text-decoration:underline}
+
+label.fld{display:block;margin-top:15px}
+label.fld .lb{font-size:12.5px;font-weight:500;display:block;margin-bottom:5px}
+label.fld .lb em{color:var(--ink-3);font-style:normal;font-weight:400}
+input[type=text]{
+  width:100%;padding:9px 11px;border:1px solid var(--line-2);border-radius:8px;
+  background:var(--surface);font:inherit;font-size:13.5px;color:var(--ink);
+}
+input[type=text]::placeholder{color:var(--ink-3)}
+input[type=text]:focus{outline:none;border-color:var(--moss);box-shadow:0 0 0 3px var(--moss-wash)}
+
+.btn{
+  width:100%;margin-top:16px;background:var(--moss);color:#fff;border:1px solid var(--moss);
+  padding:11px;border-radius:9px;font-weight:600;font-size:14px;transition:background .14s;
+}
+.btn:hover{background:var(--moss-dark);border-color:var(--moss-dark)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.mini{width:auto;margin:0;padding:6px 13px;font-size:12.5px;border-radius:7px}
+.btn.ghost{background:none;color:var(--moss);border-color:var(--line-2)}
+.btn.ghost:hover{background:var(--moss-wash);border-color:var(--moss)}
+
+.spin{width:13px;height:13px;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;
+  display:inline-block;vertical-align:-2px;margin-right:8px;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---------- results ---------- */
+.placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  min-height:62vh;color:var(--ink-2);gap:6px;padding:30px;
+}
+.placeholder h2{font-family:'Fraunces';font-weight:400;font-size:26px;margin:0;color:var(--ink);max-width:20ch;line-height:1.25}
+.placeholder p{margin:0;max-width:44ch;font-size:14px}
+
+.hero{border-radius:14px;overflow:hidden;position:relative;background:var(--ink);min-height:230px}
+.hero img{width:100%;height:340px;object-fit:cover;display:block;opacity:.92}
+.hero .veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,16,13,.86) 0%,rgba(10,16,13,.25) 45%,transparent 72%)}
+.hero .cap{position:absolute;left:0;right:0;bottom:0;padding:22px 24px;color:#fff}
+.hero .cap h2{font-family:'Fraunces';font-weight:600;font-size:32px;line-height:1.1;margin:0 0 7px;letter-spacing:-.015em}
+.hero .cap .sub{font-size:13.5px;color:#ffffffcc}
+.conf{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:99px;
+  font-size:12px;font-weight:500;margin-bottom:10px;backdrop-filter:blur(6px);
+}
+.conf.high{background:#2C554599;color:#DCF2E6;border:1px solid #6FBF9A66}
+.conf.medium{background:#A8620C99;color:#FFE9CE;border:1px solid #E0A55D66}
+.conf.low{background:#A6342899;color:#FFDDD8;border:1px solid #DC8A7E66}
+.conf .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.alt{
+  margin-top:14px;background:var(--amber-wash);border:1px solid #A8620C33;
+  border-radius:11px;padding:14px 16px;
+}
+.alt p{margin:0 0 10px;font-size:13.5px;color:var(--amber)}
+.alt .chips{display:flex;flex-wrap:wrap;gap:7px}
+.alt .chips button{
+  background:var(--surface);border:1px solid #A8620C4D;color:var(--ink);
+  padding:6px 13px;border-radius:99px;font-size:13px;
+}
+.alt .chips button:hover{background:var(--amber);color:#fff;border-color:var(--amber)}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-top:16px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.fact .k{color:var(--ink-3);font-size:11.5px}
+.fact .v{font-family:'Fraunces';font-size:16px;font-weight:600;margin-top:2px;line-height:1.3}
+.fact .v.none{font-family:'Public Sans';font-size:13.5px;font-weight:400;color:var(--ink-3);font-style:italic}
+
+.sec{margin-top:26px}
+.sec > h3{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 11px}
+
+.route{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:16px 18px}
+.route .leg{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.route .pt{font-family:'Fraunces';font-size:16px;font-weight:600}
+.route .dash{flex:1;min-width:34px;height:0;border-top:2px dotted var(--line-2)}
+.route .via{color:var(--ink-3);font-size:12px}
+.route .how{font-size:14px;color:var(--ink-2);white-space:pre-wrap;margin:0;padding-top:12px;border-top:1px solid var(--line)}
+
+.steps{list-style:none;margin:0;padding:0}
+.steps li{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:13px 16px;margin-bottom:8px;display:flex;gap:13px;align-items:flex-start;
+}
+.steps .n{
+  flex:0 0 auto;width:23px;height:23px;border-radius:50%;background:var(--moss-wash);
+  color:var(--moss);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;
+  margin-top:1px;
+}
+.steps .tx{flex:1;min-width:0}
+.steps .tx b{display:block;font-size:13px;color:var(--moss);font-weight:600;margin-bottom:1px}
+
+.scene{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:16px 18px}
+.attr{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 18px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.attr .k{color:var(--ink-3);font-size:11.5px}
+.attr .v{font-size:14px;text-transform:capitalize}
+.chipset{margin-top:14px}
+.chipset .k{color:var(--ink-3);font-size:11.5px;margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12.5px}
+.chip.sw{display:inline-flex;align-items:center;gap:7px;padding-left:6px}
+.chip .sw-dot{width:15px;height:15px;border-radius:50%;border:1px solid #00000018;flex:0 0 auto}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--ink);color:#fff;
+  padding:9px 17px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;z-index:60;max-width:88vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--red)}
+
+.sk{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:14px}
+.sk div{height:12px;border-radius:5px;background:var(--line);margin-bottom:10px;animation:pl 1.25s ease-in-out infinite}
+.sk div:nth-child(2){width:72%}.sk div:nth-child(3){width:48%}
+@keyframes pl{0%,100%{opacity:.5}50%{opacity:.95}}
+.hero.loading{height:340px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line)}
+.hero.loading .stage{text-align:center;color:var(--ink-2)}
+.hero.loading .bar{width:190px;height:3px;background:var(--line);border-radius:2px;margin:12px auto 0;overflow:hidden}
+.hero.loading .bar i{display:block;height:100%;width:40%;background:var(--moss);animation:slide 1.1s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
+@media (max-width:900px){
+  .layout{flex-direction:column}
+  .side{width:100%;flex:0 0 auto;position:static;max-height:none;padding:18px}
+  .main{padding:0 18px 60px}
+  .hero img{height:230px}
+  .hero .cap h2{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="mark" aria-hidden="true"></div>
+  <h1>Wayfind</h1>
+  <span class="tag">Photo to trip plan</span>
+</div>
+
+<div class="mode" id="mode">Demo mode — no backend reached. Start the server with <strong>uvicorn main:app --reload</strong> to run the real workflow on your photo.</div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="panel">
+      <h2>Your photo</h2>
+
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a photo">
+        <div class="ico" aria-hidden="true">◎</div>
+        <div class="t">Drop a photo or browse</div>
+        <div class="s">JPEG, PNG or WebP — resized automatically</div>
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+      <div class="file-row" id="file-row" style="display:none">
+        <span id="file-name"></span>
+        <button id="clear-file">Replace</button>
+      </div>
+
+      <label class="fld">
+        <span class="lb">Starting point <em>— optional</em></span>
+        <input type="text" id="start" placeholder="Jaipur, Rajasthan">
+      </label>
+
+      <label class="fld">
+        <span class="lb">Location hint <em>— optional</em></span>
+        <input type="text" id="hint" placeholder="Somewhere in Himachal?">
+      </label>
+
+      <button class="btn" id="run">Identify and plan</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pretty = s => String(s ?? '').replace(/_/g,' ');
+
+let file = null, imgURL = null, offline = false, current = null;
+
+/* ---------------- palette word → swatch ---------------- */
+const COLORWORDS = [
+  [/terracotta|clay|rust|burnt/i,'#B4622E'], [/turquoise|aqua|teal/i,'#2FA3A0'],
+  [/emerald|lush|forest|jungle|verdant/i,'#2E7D4F'], [/green|moss|olive/i,'#6B8C3F'],
+  [/azure|cobalt|navy|deep blue/i,'#2A4C8F'], [/blue|sky|cerulean/i,'#4B8FD1'],
+  [/sand|beige|cream|ivory|dune/i,'#DCC9A6'], [/gold|amber|honey|ochre/i,'#D19A29'],
+  [/stone|slate|grey|gray|concrete/i,'#8A9199'], [/white|snow|chalk/i,'#EDEFEA'],
+  [/black|charcoal|ink/i,'#2A2E2B'], [/pink|rose|blush/i,'#DE8FA1'],
+  [/purple|violet|lavender|magenta/i,'#8A6BB5'], [/red|crimson|scarlet/i,'#B23A34'],
+  [/orange|apricot|coral/i,'#E07A47'], [/yellow|lemon|saffron/i,'#E3C13F'],
+  [/brown|earth|umber|timber|wood/i,'#7A5A3C'],
+];
+const swatch = t => (COLORWORDS.find(([re]) => re.test(t)) || [null,'#B9C0B6'])[1];
+
+/* ---------------- itinerary text → steps ---------------- */
+function toSteps(text){
+  if(!text) return [];
+  return String(text)
+    .split(/\n+|(?=(?:Day|DAY)\s*\d+\s*[:\-–])/g)
+    .map(s => s.trim().replace(/^[-•*]\s*/,''))
+    .filter(s => s.length > 2)
+    .map(s => {
+      const m = s.match(/^((?:Day|DAY)\s*\d+|Morning|Afternoon|Evening|Night)\s*[:\-–]\s*(.*)$/s);
+      return m ? {head:m[1].replace(/^DAY/,'Day'), body:m[2].trim()} : {head:null, body:s};
+    });
+}
+
+/* ---------------- upload wiring ---------------- */
+/* ---------------- downscale before upload (Vercel caps bodies at 4.5 MB) ------ */
+async function shrink(f, max = 1600){
+  try{
+    const img = await createImageBitmap(f);
+    const s = Math.min(1, max / Math.max(img.width, img.height));
+    if(s === 1 && f.size < 2.5e6) return f;
+    const w = Math.round(img.width * s), h = Math.round(img.height * s);
+    let blob;
+    if(typeof OffscreenCanvas !== 'undefined'){
+      const c = new OffscreenCanvas(w, h);
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      blob = await c.convertToBlob({type:'image/jpeg', quality:0.85});
+    }else{
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    }
+    img.close && img.close();
+    return new File([blob], 'photo.jpg', {type:'image/jpeg'});
+  }catch(e){
+    return f;   // if the browser can't decode it, send the original
+  }
+}
+
+async function setFile(f){
+  if(!f) return;
+  if(!f.type.startsWith('image/')){ toast('That file is not an image.', true); return; }
+  f = await shrink(f);
+  if(f.size > 4*1024*1024){ toast('Image is still over 4 MB after resizing.', true); return; }
+  file = f;
+  if(imgURL) URL.revokeObjectURL(imgURL);
+  imgURL = URL.createObjectURL(f);
+  const d = $('drop');
+  d.classList.add('has');
+  d.innerHTML = `<img src="${imgURL}" alt="Selected photo">`;
+  $('file-name').textContent = f.name;
+  $('file-row').style.display = 'flex';
+}
+function clearFile(){
+  file = null;
+  if(imgURL){ URL.revokeObjectURL(imgURL); imgURL = null; }
+  const d = $('drop');
+  d.classList.remove('has');
+  d.innerHTML = `<div class="ico" aria-hidden="true">◎</div>
+    <div class="t">Drop a photo or browse</div>
+    <div class="s">JPEG, PNG or WebP — resized automatically</div>`;
+  $('file-row').style.display = 'none';
+  $('file').value = '';
+}
+$('drop').addEventListener('click', () => $('file').click());
+$('drop').addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('file').click(); }});
+$('file').addEventListener('change', e => setFile(e.target.files[0]));
+$('clear-file').addEventListener('click', e => { e.stopPropagation(); clearFile(); });
+['dragenter','dragover'].forEach(ev => $('drop').addEventListener(ev, e => { e.preventDefault(); $('drop').classList.add('over'); }));
+['dragleave','drop'].forEach(ev => $('drop').addEventListener(ev, e => { e.preventDefault(); $('drop').classList.remove('over'); }));
+$('drop').addEventListener('drop', e => setFile(e.dataTransfer.files[0]));
+
+/* ---------------- render ---------------- */
+function emptyState(){
+  $('main').innerHTML = `<div class="placeholder">
+    <h2>Where was this taken?</h2>
+    <p>Add a photo and the workflow reads the scene, names the place, and builds a trip plan around it. Add your starting point and it works out the journey too.</p>
+  </div>`;
+}
+
+function loadingState(){
+  $('main').innerHTML = `
+    <div class="hero loading"><div class="stage">
+      <div id="stage-t">Reading the scene…</div>
+      <div class="bar"><i></i></div>
+    </div></div>
+    <div class="sk"><div></div><div></div><div></div></div>
+    <div class="sk"><div></div><div></div><div></div></div>`;
+  setTimeout(() => { const s = $('stage-t'); if(s) s.textContent = 'Naming the place…'; }, 2200);
+  setTimeout(() => { const s = $('stage-t'); if(s) s.textContent = 'Building the itinerary…'; }, 5200);
+}
+
+function factHTML(k, v){
+  const has = v !== null && v !== undefined && String(v).trim() !== '';
+  return `<div class="fact"><div class="k">${k}</div>
+    <div class="v ${has?'':'none'}">${has ? esc(v) : 'Not determined'}</div></div>`;
+}
+
+function render(data, photoSrc){
+  current = data;
+  const L = data.location || {}, I = data.itinerary || {}, S = data.scene || {};
+  const name = L.primary || L.resolved || 'Not identified';
+  const conf = L.confidence || 'low';
+  const unsure = conf !== 'high' && (L.candidates || []).length;
+  const steps = toSteps(I.basicItinary);
+
+  $('main').innerHTML = `
+    <div class="hero">
+      <img src="${photoSrc}" alt="The place you uploaded">
+      <div class="veil"></div>
+      <div class="cap">
+        <span class="conf ${conf}"><span class="dot"></span>${conf === 'high' ? 'Confident match' : conf === 'medium' ? 'Likely match' : 'Uncertain match'}</span>
+        <h2>${esc(name)}</h2>
+        <div class="sub">${esc(pretty(S.landscape_setting))} · ${esc(pretty(S.lighting_atmosphere))} · ${esc(pretty(S.crowd_density))}</div>
+      </div>
+    </div>
+
+    ${unsure ? `<div class="alt">
+      <p>The photo doesn't pin this down exactly. If one of these looks right, pick it and the workflow runs again with that as the hint.</p>
+      <div class="chips" id="cands">
+        ${L.candidates.map(c => `<button data-c="${esc(c)}">${esc(c)}</button>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="facts">
+      ${factHTML('Best time to visit', I.bestTimeToVisit)}
+      ${factHTML('Ideal stay', I.idealDurationStay)}
+      ${factHTML('Approx. distance', I.estimatedKM)}
+      ${factHTML('Nearest station', I.nearestStation)}
+      ${factHTML('Nearest city', I.nearestCity)}
+    </div>
+
+    <section class="sec">
+      <h3>Getting there</h3>
+      <div class="route">
+        <div class="leg">
+          <span class="pt">${esc(I.startLoc || 'Your start')}</span>
+          <span class="dash"></span>
+          ${I.estimatedKM ? `<span class="via">${esc(I.estimatedKM)}</span><span class="dash"></span>` : ''}
+          <span class="pt">${esc(I.targetLoc || name)}</span>
+        </div>
+        <p class="how">${esc(I.howToReach || 'No route guidance returned.')}</p>
+      </div>
+    </section>
+
+    ${steps.length ? `<section class="sec">
+      <h3>Itinerary</h3>
+      <ol class="steps">
+        ${steps.map((s,i) => `<li><span class="n">${i+1}</span><div class="tx">
+          ${s.head ? `<b>${esc(s.head)}</b>` : ''}${esc(s.body)}</div></li>`).join('')}
+      </ol>
+    </section>` : ''}
+
+    <section class="sec">
+      <h3>What the photo shows</h3>
+      <div class="scene">
+        <div class="attr">
+          <div><div class="k">Environment</div><div class="v">${esc(pretty(S.environment_type))}</div></div>
+          <div><div class="k">Landscape</div><div class="v">${esc(pretty(S.landscape_setting))}</div></div>
+          <div><div class="k">Vantage point</div><div class="v">${esc(pretty(S.vantage_point))}</div></div>
+          <div><div class="k">Lighting</div><div class="v">${esc(pretty(S.lighting_atmosphere))}</div></div>
+          <div><div class="k">Crowd</div><div class="v">${esc(pretty(S.crowd_density))}</div></div>
+        </div>
+        ${chipset('Vibe', S.vibe_qualities)}
+        ${chipset('Things to do here', S.suitable_spatial_activities)}
+        ${chipset('Visible features', S.prominent_spatial_elements)}
+        ${(S.aesthetic_palette||[]).length ? `<div class="chipset"><div class="k">Palette</div><div class="chips">
+          ${S.aesthetic_palette.map(p => `<span class="chip sw"><span class="sw-dot" style="background:${swatch(p)}"></span>${esc(p)}</span>`).join('')}
+        </div></div>` : ''}
+      </div>
+    </section>`;
+
+  const c = $('cands');
+  if(c) c.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if(b){ $('hint').value = b.dataset.c; run(); }
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function chipset(label, arr){
+  if(!arr || !arr.length) return '';
+  return `<div class="chipset"><div class="k">${label}</div><div class="chips">
+    ${arr.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div>`;
+}
+
+/* ---------------- run ---------------- */
+async function run(){
+  if(!file){ toast('Add a photo first.', true); return; }
+  const btn = $('run');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Working';
+  loadingState();
+
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('start_loc', $('start').value.trim());
+  fd.append('location_hint', $('hint').value.trim());
+
+  try{
+    const res = await fetch('/api/analyze', {method:'POST', body: fd});
+    if(!res.ok){
+      const e = await res.json().catch(()=>({}));
+      throw new Error(e.detail || `Request failed (${res.status})`);
+    }
+    const data = await res.json();
+    offline = false;
+    render(data, imgURL);
+    toast('Trip plan ready.');
+  }catch(err){
+    if(err instanceof TypeError){          // network unreachable → demo
+      offline = true;
+      $('mode').classList.add('show');
+      await new Promise(r => setTimeout(r, 1600));
+      render(demoResult(), imgURL);
+      toast('Showing sample output — start the server for real results.');
+    }else{
+      toast(err.message, true);
+      emptyState();
+    }
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Identify and plan';
+  }
+}
+$('run').addEventListener('click', run);
+
+/* ---------------- demo fallback ---------------- */
+function demoResult(){
+  const start = $('start').value.trim();
+  const hint  = $('hint').value.trim();
+  const named = !!hint;
+  return {
+    id:'demo', created_at:new Date().toISOString(),
+    location:{
+      primary: named ? hint : 'Kasol, Parvati Valley, Himachal Pradesh',
+      confidence: named ? 'high' : 'medium',
+      candidates: named ? [] : ['Tosh, Himachal Pradesh','Kalga, Parvati Valley','Chalal, Himachal Pradesh','Sonamarg, Kashmir'],
+      resolved: named ? hint : 'Kasol, Parvati Valley, Himachal Pradesh'
+    },
+    scene:{
+      environment_type:'outdoor_natural', landscape_setting:'mountain_valley',
+      vantage_point:'eye_level', lighting_atmosphere:'golden_hour',
+      crowd_density:'sparse',
+      vibe_qualities:['serene','unhurried','backpacker'],
+      suitable_spatial_activities:['riverside walks','scenic photography','day hikes','cafe hopping'],
+      prominent_spatial_elements:['pine forest','river boulders','timber guesthouses','footbridge'],
+      aesthetic_palette:['pine green','river stone grey','warm gold light']
+    },
+    itinerary:{
+      startLoc: start || 'Not provided',
+      targetLoc: named ? hint : 'Kasol, Parvati Valley, Himachal Pradesh',
+      estimatedKM: start ? 'Approximately 800 km' : null,
+      nearestStation:'Joginder Nagar railway station',
+      nearestCity:'Bhuntar',
+      bestTimeToVisit:'March to June, then September to early November',
+      idealDurationStay:'3 to 4 days',
+      howToReach:"Fly or drive to Bhuntar, the closest airport to the valley. From there shared cabs and local buses run up to Kasol in about an hour and a half. Overnight buses from Delhi are the common budget route; they drop at Bhuntar early morning.",
+      basicItinary:"Day 1: Arrive, settle into a riverside guesthouse and walk the market lane as the light drops.\nDay 2: Hike the forest trail to Chalal along the river, then a slow afternoon at a terrace cafe.\nDay 3: Early start for the climb to Kheerganga, with hot springs at the top.\nDay 4: Morning by the water, then head back down to Bhuntar for onward travel."
+    }
+  };
+}
+
+
+function toast(msg, isErr){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.className = 'toast', 3000);
+}
+
+emptyState();
+</script>
+</body>
+</html>
