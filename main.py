@@ -16,6 +16,7 @@ from typing_extensions import TypedDict
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
+import os
 
 try:
     from dotenv import load_dotenv
@@ -28,8 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "trips.db"
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
-model = ChatOpenAI(model="gpt-4o-mini",api_key="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")
+api_key_openai = os.getenv("OPENAI_API_KEY")
 
+
+model = ChatOpenAI(model="gpt-4o-mini",api_key=api_key_openai)
 
 # ===========================================================================
 # 1. Schemas
