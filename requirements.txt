@@ -5,3 +5,4 @@ langchain-core
 langchain-openai
 pydantic
 typing-extensions
+uvicorn[standard]
